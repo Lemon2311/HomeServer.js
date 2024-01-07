@@ -1,4 +1,4 @@
-import { output } from "./IoTFleet.js/script.js";
+import { output, input } from "./IoTFleet.js/script.js";
 
 // Get the add-item button element
 const addItemButton = document.getElementById("add");
@@ -67,6 +67,8 @@ function handleAddItemClick() {
   });
 }
 
+let buttonState=false;
+
 // Load the outputs from local storage when the page loads
 window.onload = function () {
   const savedOutputs = JSON.parse(localStorage.getItem("outputs"));
@@ -90,20 +92,50 @@ window.onload = function () {
       outputs.push(outp);
 
       // Add a click event listener to the new button, to toggle the output
-      let clickCount = 0;
       newItem.addEventListener("click", function () {
-        clickCount++;
-        if (clickCount % 2 === 1) {
+        
+        if (buttonState === false) {
           console.log(savedOutputs[newItem.id],newItem.id);
           console.log(outputs);
-          outputs[i].set("high");
+          buttonState=true;
         } else {
-          outputs[i].set("low");
+          buttonState=false;
         }
+        outputs[i].set(buttonState ? "high" : "low");
       });
     }
   }
 };
+
+const { d4, d3 } = input("192.168.1.138", "d4", "d3");
+
+//outputs[0].set("high");
+
+let previousValue = await d4.get();
+
+setInterval(async () => {
+  const currentValue = await d4.get();
+  console.log(currentValue,previousValue);
+  console.log("sdadsa");
+
+  if (currentValue !== previousValue) {
+    if (buttonState === false)
+      buttonState = true;
+    else
+      buttonState = false;
+
+      if(buttonState === true)
+    outputs[0].set('high');
+  else
+    outputs[0].set('low');
+
+  previousValue = currentValue;
+  console.log(currentValue,previousValue);
+
+}
+  
+}, 1000); // Change the interval time as needed
+
 
 //clear  local storage  for testing
 //localStorage.clear();

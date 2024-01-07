@@ -95,6 +95,7 @@ class Input extends IO {
       } else if (this.type === "a") {
         response = await this.#analogPinInput(this.pin, type, precision);
       }
+      return response;
       console.log(response);
     } catch (error) {
       console.error("Error:", error);
