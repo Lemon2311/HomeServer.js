@@ -96,9 +96,9 @@ window.onload = function () {
         if (clickCount % 2 === 1) {
           console.log(savedOutputs[newItem.id],newItem.id);
           console.log(outputs);
-          outputs[0].set("high");
+          outputs[i].set("high");
         } else {
-          outputs[0].set("low");
+          outputs[i].set("low");
         }
       });
     }
