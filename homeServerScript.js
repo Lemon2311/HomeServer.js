@@ -16,7 +16,9 @@ let names = [];
 
 let mechanicalInputs = [];
 
-let buttonState = false;
+let buttonState = [];
+
+let esp32ip = "192.168.1.160";
 
 // Function to handle the add-item button click event
 async function handleAddItemClick() {
@@ -49,7 +51,7 @@ async function handleAddItemClick() {
   // Add the button to the list
   itemList.appendChild(newItem);
 
-  const out = output("192.168.1.138", beginningText)[beginningText];
+  const out = output(esp32ip, beginningText)[beginningText];
 
   // Add the output to the outputs array
   outputs.push(out);
@@ -60,17 +62,9 @@ async function handleAddItemClick() {
 
   localStorage.setItem("names", JSON.stringify(names));
 
-  // Add a click event listener to the new button, to toggle the output
-  newItem.addEventListener("click", function () {
-    if (buttonState === false) {
-      console.log(outputs[newItem.id], newItem.id);
-      console.log(outputs);
-      buttonState = true;
-    } else {
-      buttonState = false;
-    }
-    outputs[newItem.id].set(buttonState ? "high" : "low");
-  });
+  buttonState[newItem.id] = false;
+
+  localStorage.setItem("buttonState", JSON.stringify(buttonState));
 
   if (mechanicalInput) {
     console.log(mechanicalInput);
@@ -78,15 +72,20 @@ async function handleAddItemClick() {
     mechanicalInputs[newItem.id] = mechanicalInput;
     localStorage.setItem("mechanicalInputs", JSON.stringify(mechanicalInputs));
   }
+
+  location.reload();
 }
 
 // Load the outputs from local storage when the page loads
 window.onload = function () {
+
   const savedOutputs = JSON.parse(localStorage.getItem("outputs"));
   const savedNames = JSON.parse(localStorage.getItem("names"));
   const savedMechanicalInputs = JSON.parse(
     localStorage.getItem("mechanicalInputs")
   );
+
+  const buttonState = JSON.parse(localStorage.getItem("buttonState"));
 
   console.log(savedOutputs);
   console.log("dasda");
@@ -111,25 +110,27 @@ window.onload = function () {
 
       // Add a click event listener to the new button, to toggle the output
       newItem.addEventListener("click", function () {
-        if (buttonState === false) {
+        console.log(buttonState[0]);
+        if (buttonState[newItem.id] === false) {
           console.log(savedOutputs[newItem.id], newItem.id);
           console.log(outputs);
-          buttonState = true;
+          buttonState[newItem.id] = true;
         } else {
-          buttonState = false;
+          buttonState[newItem.id] = false;
         }
-        outputs[i].set(buttonState ? "high" : "low");
+        outputs[i].set(buttonState[newItem.id] ? "high" : "low");
+        localStorage.setItem("buttonState", JSON.stringify(buttonState));
       });
 
-    if (savedMechanicalInputs[i]) {
-      getMechanicalSwitchStateChange(savedMechanicalInputs[i], outp);
+      if (savedMechanicalInputs[i]) {
+        getMechanicalSwitchStateChange(savedMechanicalInputs[i], outp, i);
+      }
     }
   }
-}
 };
 
-const getMechanicalSwitchStateChange = async (mechanicalInput, output) => {
-  const inp = input("192.168.1.138", mechanicalInput);
+const getMechanicalSwitchStateChange = async (mechanicalInput, output, i) => {
+  const inp = input(esp32ip, mechanicalInput);
 
   let previousValue = await inp[mechanicalInput].get();
 
@@ -139,10 +140,10 @@ const getMechanicalSwitchStateChange = async (mechanicalInput, output) => {
       console.log("sdadsa");
 
       if (currentValue !== previousValue) {
-        if (buttonState === false) buttonState = true;
-        else buttonState = false;
+        if (buttonState[i] === false) buttonState[i] = true;
+        else buttonState[i] = false;
 
-        if (buttonState === true) output.set("high");
+        if (buttonState[i] === true) output.set("high");
         else output.set("low");
 
         previousValue = currentValue;
