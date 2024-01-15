@@ -32,3 +32,10 @@ input{
     border: none;
 }
 
+#add{
+    width: 150px;
+}
+
+#recordButton{
+    width: 200px;
+}

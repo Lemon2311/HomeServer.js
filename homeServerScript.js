@@ -78,7 +78,6 @@ async function handleAddItemClick() {
 
 // Load the outputs from local storage when the page loads
 window.onload = function () {
-
   const savedOutputs = JSON.parse(localStorage.getItem("outputs"));
   const savedNames = JSON.parse(localStorage.getItem("names"));
   const savedMechanicalInputs = JSON.parse(
@@ -126,6 +125,79 @@ window.onload = function () {
         getMechanicalSwitchStateChange(savedMechanicalInputs[i], outp, i);
       }
     }
+  }
+
+  let mediaRecorder;
+  let audioChunks = [];
+  let isRecording = false;
+  const recordButton = document.getElementById("recordButton");
+
+  recordButton.addEventListener("click", () => {
+    isRecording ? stopRecording() : startRecording();
+    isRecording = !isRecording;
+    recordButton.innerText = isRecording ? "Stop Recording" : "Start Recording";
+  });
+
+  function startRecording() {
+    navigator.mediaDevices
+      .getUserMedia({ audio: true })
+      .then((stream) => {
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = (event) => audioChunks.push(event.data);
+        mediaRecorder.start();
+      })
+      .catch((error) => console.error("Error accessing media devices:", error));
+  }
+
+  function stopRecording() {
+    mediaRecorder.stop();
+    mediaRecorder.onstop = () => {
+      const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+      audioChunks = []; // Reset the chunks array for the next recording
+      sendAudioToAPI(audioBlob);
+    };
+  }
+
+  function sendAudioToAPI(audioBlob) {
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "recording.webm");
+
+    fetch("http://localhost:5000/audio", {
+      method: "POST",
+      body: formData,
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.text(); // response.text() instead of response.json()
+      })
+      .then((data) => {
+        console.log("Server response:", data);
+
+        if (data.toLowerCase().includes("turn")) {
+          const textAfterTurn = data
+            .substring(data.toLowerCase().indexOf("turn") + 4)
+            .replace(/[.,]/g, "");
+          const words = textAfterTurn
+            .split(" ")
+            .map((word) => word.trim())
+            .filter((word) => word !== "");
+          let outputIndex = savedNames.indexOf(words[0]);
+          console.log(outputIndex);
+          console.log("Split words:", words);
+          const outp = output(
+            savedOutputs[outputIndex].ip,
+            savedOutputs[outputIndex].type + savedOutputs[outputIndex].pin
+          )[savedOutputs[outputIndex].type + savedOutputs[outputIndex].pin];
+          if (words[1] === "on") {
+            outp.set("high");
+          } else if (words[1] === "off") {
+            outp.set("low");
+          }
+        }
+      })
+      .catch((error) => console.error("Error sending audio data:", error));
   }
 };
 
