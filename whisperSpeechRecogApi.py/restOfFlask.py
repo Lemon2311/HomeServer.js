@@ -3,7 +3,10 @@ from werkzeug.utils import secure_filename
 from whisperSpeechToText import transcribe_audio
 import tempfile
 
+from flask_cors import CORS
+
 app = Flask(__name__)
+CORS(app)
 
 @app.route('/audio', methods=['POST'])
 def handle_audio():
